@@ -1,12 +1,5 @@
-mod api;
-mod block;
-mod mmap_format;
-mod query;
-mod store;
-mod types;
-
-use api::start_server;
-use store::FxStore;
+use fx_store::api::start_server;
+use fx_store::store::FxStore;
 use std::sync::Arc;
 
 #[tokio::main]

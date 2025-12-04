@@ -67,3 +67,45 @@ pub struct Symbol {
     pub base: String,
     pub quote: String,
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_ohlcv_size() {
+        assert_eq!(std::mem::size_of::<OHLCV>(), 40);
+    }
+
+    #[test]
+    fn test_ohlcv_parsing() {
+        let ohlcv = OHLCV::from_fx(
+            "20230101 120000",
+            1.23456,
+            1.23499,
+            1.23400,
+            1.23450,
+            100,
+            1
+        );
+
+        let open = ohlcv.open;
+        let high = ohlcv.high;
+        let low = ohlcv.low;
+        let close = ohlcv.close;
+        let volume = ohlcv.volume;
+        let symbol_id = ohlcv.symbol_id;
+        let ts = ohlcv.ts;
+
+        assert_eq!(open, 123456);
+        assert_eq!(high, 123499);
+        assert_eq!(low, 123400);
+        assert_eq!(close, 123450);
+        assert_eq!(volume, 100);
+        assert_eq!(symbol_id, 1);
+        
+        // Timestamp verification: 2023-01-01 12:00:00 UTC
+        // 1672574400 seconds
+        assert_eq!(ts, 1672574400 * 1_000_000_000);
+    }
+}

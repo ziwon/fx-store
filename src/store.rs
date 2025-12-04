@@ -200,3 +200,32 @@ fn aggregate_ticks_to_minutes(_symbol_id: u16, _tx: Sender<OHLCV>) {
     // TODO: 실제 틱 데이터 수신 및 집계 로직 구현
     // 현재는 스텁 구현
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use std::time::Duration;
+
+    #[test]
+    fn test_store_symbol_creation() {
+        let store = FxStore::new();
+        let id1 = store.get_or_create_symbol("EURUSD");
+        let id2 = store.get_or_create_symbol("GBPUSD");
+        let id3 = store.get_or_create_symbol("EURUSD");
+
+        assert_eq!(id1, 0);
+        assert_eq!(id2, 1);
+        assert_eq!(id3, 0); // Should return existing ID
+        
+        let symbols = store.get_symbols();
+        assert!(symbols.contains(&"EURUSD".to_string()));
+        assert!(symbols.contains(&"GBPUSD".to_string()));
+    }
+
+    #[test]
+    fn test_store_query_empty() {
+        let store = FxStore::new();
+        let results: Vec<_> = store.query_range("EURUSD", 0, 1000).collect();
+        assert!(results.is_empty());
+    }
+}

@@ -43,7 +43,8 @@ impl CompressedBlock {
         }
 
         // 압축 해제
-        let decompressed = decompress(&self.data, BLOCK_SIZE * 40).unwrap();
+        // bincode serialization of Vec adds 8 bytes for length
+        let decompressed = decompress(&self.data, BLOCK_SIZE * 40 + 8).unwrap();
         let records: Vec<OHLCV> = bincode::deserialize(&decompressed).unwrap();
         let mut block = Box::new([OHLCV::default(); BLOCK_SIZE]);
         for (i, record) in records.into_iter().enumerate() {
@@ -55,5 +56,46 @@ impl CompressedBlock {
         // 캐시 저장
         *self.cached.write() = Some(block.clone());
         block
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_block_compression() {
+        let mut records = Vec::new();
+        // Create a dummy record at 12:00:00 (720th minute)
+        // 2023-01-01 12:00:00 = 1672574400
+        let ts = 1672574400 * 1_000_000_000;
+        let rec = OHLCV {
+            ts,
+            open: 100000,
+            high: 100000,
+            low: 100000,
+            close: 100000,
+            volume: 100,
+            symbol_id: 1,
+            _pad: [0; 10],
+        };
+        records.push(rec);
+
+        let block = CompressedBlock::new(20230101, 1, &records);
+        
+        // Decompress and verify
+        let decompressed = block.decompress();
+        
+        // 12:00 is the 720th minute of the day
+        let target_idx = 720;
+        let ts_val = decompressed[target_idx].ts;
+        let vol_val = decompressed[target_idx].volume;
+        
+        assert_eq!(ts_val, ts);
+        assert_eq!(vol_val, 100);
+        
+        // Verify empty slot is default
+        let empty_ts = decompressed[0].ts;
+        assert_eq!(empty_ts, 0);
     }
 }
